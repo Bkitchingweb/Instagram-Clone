@@ -1,40 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import FirebaseContext from '../context/firebase';
+import * as ROUTES from '../constants/routes';
 
-// =====================
-// Login.js page
-// =====================
-
-// =====================
-// Structure
-// =====================
-// - div (parent)
-// 	- div (child)
-// 	- div (child)
-// 		- div (child of child)
-// 		- div (child of child)
-
-
-// A container div that holds children
-// 	- div
-// 		- image of src /images/iphone-with-profile.jpg & alt tag of "iPhone with Instagram app"
-
-// 	- div to wrap the following children
-// 		- div -> (another div to wrap the form (see below for further details of the form)
-// 		- div -> a paragraph with a React router link that allows to the user to navigate to 'Sign up' - use the ROUTES file to link to this particular page
-
-// A form for the user to login with a method of POST
-
-// An input box for the user to enter their email address with a placeholder value of Email Address
-
-// An input box for the user to enter their password with a placeholder value of Password
-
-// A button so that the user can submit the form
-
-// References:
-// 	- Tailwind container: https://tailwindcss.com/docs/container
-// 	- Tailwind flex: https://tailwindcss.com/docs/flex
 
 export default function Login() {
+    const { firebase } = useContext(FirebaseContext);
+    let navigate = useNavigate();
+
+    const [emailAddress, setEmailAddress] = useState('')
+    const [password, setPassword] = useState('')
+
+    const [error, setError] = useState('');
+    const isInvalid = emailAddress === '' || password === ''
+
+    const handleLogin = async (event) => {
+        event.preventDefault();
+        
+        try {
+            await firebase.auth().signInWithEmailAndPassword(emailAddress, password);
+            navigate(ROUTES.DASHBOARD)
+        } catch (error) {
+            setEmailAddress('');
+            setPassword('');
+            setError(error.message);
+        }
+    }
+
+    useEffect(() => {
+        document.title = 'Login - Instagram';
+    }, []);
+
     return (
         <div className="md:container md:mx-auto md:flex md:gap-8 md:items-center md:justify-center">
             <div className="">
@@ -43,15 +39,40 @@ export default function Login() {
             <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-4 bg-white p-2 md: p-6">
                     <img src="/images/logo.png" alt="Instagram logo" className="max-w-max mx-auto"/>
-                    <form method="POST" className="flex flex-col gap-4">
-                        <input placeholder="Email Address"/>
-                        <input placeholder="Password"/>
-                        <button>Log in</button>
+                    {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
+
+                    <form onSubmit={handleLogin} method="POST" className="flex flex-col gap-4">
+                        <input
+                            aria-label="Enter your email address"
+                            className="text-sm w-full mr-3 py-5 px-4 h-2 border rounded mb-2"
+                            type="text"
+                            placeholder="Email address"
+                            value={emailAddress}
+                            onChange={({ target }) => setEmailAddress(target.value)}
+                        />
+                        <input
+                            aria-label="Enter your password"
+                            className="text-sm w-full mr-3 py-5 px-4 h-2 border rounded mb-2"
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={({ target }) => setPassword(target.value)}
+                        />
+                        <button
+                            disabled={isInvalid}
+                            type="submit"
+                            className={`bg-blue-500 text-white w-full rounded h-8 font-bold ${ isInvalid && 'cursor-not-allowed opacity-50'
+                            }`}
+                        >
+                            Log In
+                        </button>
                     </form>
                 </div>
                 <div className="md:flex md:gap-8 md:items-center md:justify-center bg-white p-2 md: p-6">
                     <p>Dont have an account?</p>
-                    <a>Sign up</a>
+                    <Link to={ROUTES.SIGN_UP} className="font-bold">
+                        Sign up
+                    </Link>
                 </div>
             </div>
         </div>
