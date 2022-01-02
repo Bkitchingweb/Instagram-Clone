@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import FirebaseContext from '../context/firebase';
 import * as ROUTES from '../constants/routes';
+import { doesUsernameExist } from '../services/firebase';
 
 export default function SignUp() {
     const { firebase } = useContext(FirebaseContext);
+    const navigate = useNavigate()
 
     const [formData, setFormData] = useState({
         username: "",
@@ -17,7 +19,7 @@ export default function SignUp() {
     const isInvalid = formData.username === '' || 
                         formData.fullName === '' || 
                         formData.password === '' || 
-                        formData.emailAddress === '';
+                        formData.email === '';
 
     const handleChange = (event) => {
         const {name, value} = event.target
@@ -36,30 +38,42 @@ export default function SignUp() {
     const handleSubmit = async (event) => {
         event.preventDefault()
 
-        try {
-            const createdUserResult = await firebase.auth().createUserWithEmailAndPassword(formData.emailAddress, formData.password)
-             
-            await createdUserResult.user.updateProfile({
-                displayName: formData.userName
-            })
-                        
-            await firebase.firestore().collection("users").add({
-                userId: createdUserResult.user.uid,
-                username: formData.userName.toLowerCase(),
-                fullName: formData.fullName,
-                emailAddress: formData.emailAddress.toLowerCase(),
-                following: [],
-                followers: [],
-                dateCreated: Date.now()
-            })
-        } catch (error) {
+        const usernameExists = await doesUsernameExist(formData.username);
+        if (!usernameExists.length) {
+            try {
+                const createdUserResult = await firebase.auth().createUserWithEmailAndPassword(formData.email, formData.password)
+                
+                await createdUserResult.user.updateProfile({
+                    displayName: formData.username
+                })
+                            
+                await firebase.firestore().collection("users").add({
+                    userId: createdUserResult.user.uid,
+                    username: formData.username.toLowerCase(),
+                    fullName: formData.fullName,
+                    emailAddress: formData.email.toLowerCase(),
+                    following: [],
+                    followers: [],
+                    dateCreated: Date.now()
+                })
+
+                navigate(ROUTES.DASHBOARD)
+
+            } catch (error) {
+                setFormData({
+                    username: "",
+                    fullName: "",
+                    email: "",
+                    password: ""
+                })
+                setError(error.message)
+            }
+        } else {
             setFormData({
-                username: "",
                 fullName: "",
                 email: "",
-                password: ""
             })
-            setError(error.message)
+            setError('That username is already taken, please try another!')
         }
     }
 
