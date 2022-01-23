@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
+import IsntLoggedIn from './helpers/isnt-logged-in';
 import UserContext from './context/user';
 import useAuthListener from './hooks/useAuthListener';
 import * as ROUTES from './constants/routes';
@@ -22,7 +23,14 @@ export default function App() {
                         <Route path={ROUTES.LOGIN} element={<Login />} />
                         <Route path={ROUTES.SIGN_UP} element={<SignUp />} />
                         <Route path={ROUTES.PROFILE} element={<Profile />} />
-                        <Route exact path={ROUTES.DASHBOARD} element={<Dashboard />} />
+                        <Route path={ROUTES.DASHBOARD} element={
+                            <IsntLoggedIn 
+                                user={user} 
+                                notLoggedInPath={ROUTES.LOGIN}
+                            >
+                                <Dashboard />
+                            </IsntLoggedIn> 
+                        }/>
                         <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
                     </Routes>
                 </Suspense>

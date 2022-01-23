@@ -70,13 +70,29 @@ export async function getSuggestedProfiles(userId) {
         .filter((profile) => profile.userId !== userId && !following.includes(profile.userId));
 }
 
+export async function isUserFollowingProfile(activeUsername, profileUserId) {
+    const result = await firebase
+        .firestore()
+        .collection('users')
+        .where('username', '==', activeUsername)
+        .where('following', 'array-contains', profileUserId)
+        .get();
+        
+    const [response = {}] = result.docs.map((item) => ({
+        ...item.data(),
+        docId: item.id
+    }));
+    
+    return !!response.fullName;
+}
+
 export async function updateUserFollowing(docId, profileId, isFollowingProfile) {
     return firebase
         .firestore()
         .collection('users')
         .doc(docId)
         .update({
-            followers: isFollowingProfile
+            following: isFollowingProfile
                 ? FieldValue.arrayRemove(profileId)
                 : FieldValue.arrayUnion(profileId)
         });
@@ -137,4 +153,15 @@ export async function getUserPhotosByUsername(username) {
     }));
     
     return photos;
+}
+
+export async function toggleFollow(
+    isFollowingProfile,
+    activeUserDocId,
+    profileDocId,
+    profileId,
+    followingUserId
+) {
+    await updateUserFollowing(activeUserDocId, profileId, isFollowingProfile);
+    await updateFollowedUserFollowers(profileDocId, followingUserId, isFollowingProfile);
 }
